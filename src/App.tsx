@@ -1,4 +1,4 @@
-import React, { ReactChild, useEffect, useRef } from 'react';
+import React, { useEffect } from 'react';
 import logo from './logo.svg';
 import './App.css';
 import { SidebarHeader } from './components';
@@ -10,6 +10,10 @@ import {
 } from './components/sidebar-accordion';
 import { SidebarAccordionContent } from './components/sidebar-accordion-content';
 
+/**
+ * Основной компонент
+ * @constructor
+ */
 function App(): JSX.Element {
   let sidebarAccordionRef: SidebarAccordion | null;
 
@@ -44,6 +48,7 @@ function App(): JSX.Element {
           content: <SidebarAccordionContent>ssssss</SidebarAccordionContent>,
           sidebars: [
             <Sidebar
+              key="sidebar-right-1"
               position="right"
               headerClicked={() => console.log('sidebar click header')}
             >
@@ -61,6 +66,7 @@ function App(): JSX.Element {
               }}
             </Sidebar>,
             <Sidebar
+              key="sidebar-right-2"
               position="right"
               headerClicked={() => console.log('sidebar click header')}
             >
@@ -79,6 +85,7 @@ function App(): JSX.Element {
               }}
             </Sidebar>,
             <Sidebar
+              key="sidebar-left-1"
               position="left"
               headerClicked={() => console.log('sidebar click header')}
             >
@@ -97,6 +104,7 @@ function App(): JSX.Element {
               }}
             </Sidebar>,
             <Sidebar
+              key="sidebar-left-2"
               position="left"
               headerClicked={() => console.log('sidebar click header')}
             >
