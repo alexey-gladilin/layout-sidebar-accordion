@@ -18,7 +18,11 @@ function App(): JSX.Element {
   let sidebarAccordionRef: SidebarAccordion | null;
 
   useEffect(() => {
-    // sidebarAccordionRef.l
+    // sidebarAccordionRef?.open('right', 1);
+    // sidebarAccordionRef?.open('left');
+    sidebarAccordionRef?.open('all');
+
+    setTimeout(() => sidebarAccordionRef?.close('all'), 10000);
     console.log(sidebarAccordionRef);
   });
 

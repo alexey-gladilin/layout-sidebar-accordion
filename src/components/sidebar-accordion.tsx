@@ -10,6 +10,8 @@ type ReactChildExt = ReactChild & {
 
 type ChildrenType = { content: ReactChildExt; sidebars?: ReactChildExt[] };
 
+type Position = 'left' | 'top' | 'right' | 'bottom' | 'all';
+
 interface SidebarAccordionProps {
   className?: string;
   sidebarResizable?: boolean;
@@ -27,10 +29,15 @@ type Props = Readonly<SidebarAccordionProps>;
  * @constructor
  */
 class SidebarAccordion extends Component<Props> {
-  private leftPaneRef: HTMLDivElement | null = null;
-  private topPaneRef: HTMLDivElement | null = null;
-  private rightPaneRef: HTMLDivElement | null = null;
-  private bottomPaneRef: HTMLDivElement | null = null;
+  /**
+   * Карта областей расположения боковых панелей
+   */
+  private panesRefs: {
+    left?: HTMLDivElement;
+    top?: HTMLDivElement;
+    right?: HTMLDivElement;
+    bottom?: HTMLDivElement;
+  } = {};
 
   /**
    * Контейнер для размещения контента и боковых панелей
@@ -57,28 +64,88 @@ class SidebarAccordion extends Component<Props> {
     }
   }
 
-  private readonly isChildrenType = (children: any): children is ChildrenType =>
-    Helper.isObject(children) && 'sidebars' in children;
+  /**
+   * Открыть боковую панель
+   * @param value Позиция в рамках которой необходимо открыть боковую панель
+   * @param index Индекс боковой панели
+   * @return void
+   */
+  open(value: Position, index = 0): void {
+    this.sidebarToggle(value, true, index);
+  }
 
   /**
-   * Возвращает ссылку на область размещения панелей
-   * @param position Поизиция области
-   * @return Ссылка на элемент
+   * Закрыть боковую панель
+   * @param value Позиция в рамках которой необходимо закрыть боковую панель
+   * @return void
    */
-  private getPaneRef(position: string): HTMLDivElement | null {
+  close(value: Position): void {
+    this.sidebarToggle(value, false);
+  }
+
+  /**
+   * Осуществляет переключение состояния панелей
+   * @param position Позиция боковой панели где требуется переключение
+   * @param opened Открыть/закрыть
+   * @param index Индекс боковой панели
+   * @return void
+   */
+  private sidebarToggle(
+    position: Position,
+    opened: boolean,
+    index?: number
+  ): void {
+    const sidebars: Element[] = [];
+    const paneRef = this.panesRefs[
+      position as 'left' | 'top' | 'right' | 'bottom'
+    ];
+    if (paneRef) {
+      if (position === 'left' || position === 'top') {
+        for (let i = paneRef.children.length - 1; i >= 0; i--) {
+          sidebars.push(paneRef.children[i]);
+        }
+      } else {
+        for (let i = 0; i < paneRef.children.length; i++) {
+          sidebars.push(paneRef.children[i]);
+        }
+      }
+    }
+
     switch (position) {
-      case 'left':
-        return this.leftPaneRef;
-      case 'top':
-        return this.topPaneRef;
-      case 'right':
-        return this.rightPaneRef;
-      case 'bottom':
-        return this.bottomPaneRef;
+      case 'all':
+        Object.keys(this.panesRefs).forEach(key => {
+          const paneRef = this.panesRefs[
+            key as 'left' | 'top' | 'right' | 'bottom'
+          ];
+          if (paneRef) {
+            if (opened) {
+              if (paneRef.children.length > 0) {
+                SidebarAccordion.addAttrOpen(
+                  paneRef.children[index ? index : 0]
+                );
+              }
+            } else if (index) {
+              SidebarAccordion.removeAttrOpen(paneRef.children[index]);
+            } else {
+              for (let i = 0; i < paneRef.children.length; i++) {
+                SidebarAccordion.removeAttrOpen(paneRef.children[i]);
+              }
+            }
+          }
+        });
+        break;
       default:
-        return null;
+        opened
+          ? SidebarAccordion.addAttrOpen(sidebars[index ? index : 0])
+          : index
+          ? SidebarAccordion.removeAttrOpen(sidebars[index])
+          : sidebars.forEach(s => SidebarAccordion.removeAttrOpen(s));
+        break;
     }
   }
+
+  private readonly isChildrenType = (children: any): children is ChildrenType =>
+    Helper.isObject(children) && 'sidebars' in children;
 
   /**
    * Обработчик события клика по заголовку боковой панели
@@ -98,7 +165,9 @@ class SidebarAccordion extends Component<Props> {
       ? e.target
       : (e.target as HTMLDivElement).parentElement) as HTMLDivElement;
 
-    const paneRef = this.getPaneRef(sender.props.position);
+    const paneRef = this.panesRefs[
+      sender.props.position as 'left' | 'top' | 'right' | 'bottom'
+    ];
 
     const eventArgs: SidebarOpenChangedEventArgs = {
       position: sender.props.position
@@ -133,6 +202,26 @@ class SidebarAccordion extends Component<Props> {
       sidebarOpenChanged(eventArgs);
     }
     // console.log('sidebar onHeaderClicked event');
+  }
+
+  /**
+   * Устанавливает атрибут открытия панели
+   * @param sidebar Ссылка на DOM элемент боковой панели
+   * @return void
+   */
+  private static addAttrOpen(sidebar: Element): void {
+    const itemHeaderRef = sidebar.querySelector('.sidebar-header');
+    itemHeaderRef?.setAttribute('open', '');
+  }
+
+  /**
+   * Удаляет атрибут открытия панели
+   * @param sidebar Ссылка на DOM элемент боковой панели
+   * @return void
+   */
+  private static removeAttrOpen(sidebar: Element): void {
+    const itemHeaderRef = sidebar.querySelector('.sidebar-header');
+    itemHeaderRef?.removeAttribute('open');
   }
 
   /**
@@ -221,7 +310,7 @@ class SidebarAccordion extends Component<Props> {
     return (
       <div className={'sidebar-accordion' + (className ? ` ${className}` : '')}>
         <div
-          ref={elm => (this.leftPaneRef = elm)}
+          ref={elm => (this.panesRefs['left'] = elm as HTMLDivElement)}
           className="sidebar-accordion__left-pane"
         >
           {leftPane.map((item, index) => {
@@ -231,7 +320,7 @@ class SidebarAccordion extends Component<Props> {
           })}
         </div>
         <div
-          ref={elm => (this.topPaneRef = elm)}
+          ref={elm => (this.panesRefs['top'] = elm as HTMLDivElement)}
           className="sidebar-accordion__top-pane"
         >
           {topPane.map((item, index) => {
@@ -241,7 +330,7 @@ class SidebarAccordion extends Component<Props> {
           })}
         </div>
         <div
-          ref={elm => (this.rightPaneRef = elm)}
+          ref={elm => (this.panesRefs['right'] = elm as HTMLDivElement)}
           className="sidebar-accordion__right-pane"
         >
           {rightPane.map((item, index) => {
@@ -251,7 +340,7 @@ class SidebarAccordion extends Component<Props> {
           })}
         </div>
         <div
-          ref={elm => (this.bottomPaneRef = elm)}
+          ref={elm => (this.panesRefs['bottom'] = elm as HTMLDivElement)}
           className="sidebar-accordion__bottom-pane"
         >
           {bottomPane.map((item, index) => {
