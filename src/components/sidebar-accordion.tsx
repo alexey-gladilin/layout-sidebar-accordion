@@ -175,22 +175,21 @@ class SidebarAccordion extends Component<Props> {
 
     if (paneRef) {
       for (let i = 0; i < paneRef.children.length; i++) {
-        const item = paneRef.children[i];
-        const itemHeaderRef = item.querySelector('.sidebar-header');
-        if (itemHeaderRef === headerRef) {
-          if (headerRef.hasAttribute('open')) {
-            headerRef.removeAttribute('open');
+        const itemRef = paneRef.children[i];
+
+        if (itemRef === headerRef.parentElement) {
+          if (itemRef.hasAttribute('open')) {
+            itemRef.removeAttribute('open');
             eventArgs.close = i;
           } else {
-            headerRef.setAttribute('open', '');
+            itemRef.setAttribute('open', '');
             eventArgs.open = i;
           }
         } else if (
-          itemHeaderRef &&
-          itemHeaderRef !== headerRef &&
-          itemHeaderRef.hasAttribute('open')
+          itemRef !== headerRef.parentElement &&
+          itemRef.hasAttribute('open')
         ) {
-          itemHeaderRef.removeAttribute('open');
+          itemRef.removeAttribute('open');
           eventArgs.close = i;
         }
       }
@@ -210,8 +209,7 @@ class SidebarAccordion extends Component<Props> {
    * @return void
    */
   private static addAttrOpen(sidebar: Element): void {
-    const itemHeaderRef = sidebar.querySelector('.sidebar-header');
-    itemHeaderRef?.setAttribute('open', '');
+    sidebar.setAttribute('open', '');
   }
 
   /**
@@ -220,8 +218,7 @@ class SidebarAccordion extends Component<Props> {
    * @return void
    */
   private static removeAttrOpen(sidebar: Element): void {
-    const itemHeaderRef = sidebar.querySelector('.sidebar-header');
-    itemHeaderRef?.removeAttribute('open');
+    sidebar.removeAttribute('open');
   }
 
   /**
