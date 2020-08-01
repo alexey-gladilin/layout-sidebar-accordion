@@ -86,7 +86,7 @@ class SidebarAccordion extends Component<Props> {
    * @param index Индекс боковой панели
    * @return void
    */
-  open(value: Position, index = 0): void {
+  open(value: Position | 'all', index = 0): void {
     this.sidebarToggle(value, true, index);
   }
 
@@ -95,7 +95,7 @@ class SidebarAccordion extends Component<Props> {
    * @param value Позиция в рамках которой необходимо закрыть боковую панель
    * @return void
    */
-  close(value: Position): void {
+  close(value: Position | 'all'): void {
     this.sidebarToggle(value, false);
   }
 
@@ -105,7 +105,7 @@ class SidebarAccordion extends Component<Props> {
    * @param mode Режим
    * @return void
    */
-  setMode(position: Position, mode: RenderModeType): void {
+  setMode(position: Position | 'all', mode: RenderModeType): void {
     const changeMode = (
       paneRef: HTMLDivElement | undefined,
       position: Position
@@ -126,15 +126,10 @@ class SidebarAccordion extends Component<Props> {
       }
     };
 
-    console.log(this.getPaneStyle(position));
-
     if (position === 'all') {
       Object.keys(this.panesRefs).forEach(key => {
-        const propName = key as 'left' | 'top' | 'right' | 'bottom';
-        changeMode(
-          this.panesRefs[propName],
-          propName as 'left' | 'top' | 'right' | 'bottom'
-        );
+        const propName = key as Position;
+        changeMode(this.panesRefs[propName], propName as Position);
       });
     } else {
       changeMode(this.panesRefs[position], position);
@@ -149,7 +144,7 @@ class SidebarAccordion extends Component<Props> {
       | 'paddingBottom';
 
     Object.keys(this.panesRefs).forEach(key => {
-      const propName = key as 'left' | 'top' | 'right' | 'bottom';
+      const propName = key as Position;
 
       const style = this.getPaneStyle(propName);
       Object.keys(style).forEach(propStyle => {
@@ -169,15 +164,13 @@ class SidebarAccordion extends Component<Props> {
    * @return void
    */
   private sidebarToggle(
-    position: Position,
+    position: Position | 'all',
     opened: boolean,
     index?: number
   ): void {
     const getSidebars = (position: Position) => {
       const arr: Element[] = [];
-      const paneRef = this.panesRefs[
-        position as 'left' | 'top' | 'right' | 'bottom'
-      ];
+      const paneRef = this.panesRefs[position as Position];
       if (paneRef) {
         if (position === 'left' || position === 'top') {
           for (let i = paneRef.children.length - 1; i >= 0; i--) {
@@ -192,7 +185,7 @@ class SidebarAccordion extends Component<Props> {
       return arr;
     };
 
-    const sidebars: Element[] = getSidebars(position);
+    const sidebars: Element[] = getSidebars(position as Position);
 
     switch (position) {
       case 'all':
@@ -257,9 +250,7 @@ class SidebarAccordion extends Component<Props> {
 
     const sidebar = getSidebar(e.target as HTMLDivElement);
 
-    const paneRef = this.panesRefs[
-      sender.props.position as 'left' | 'top' | 'right' | 'bottom'
-    ];
+    const paneRef = this.panesRefs[sender.props.position as Position];
 
     const eventArgs: SidebarOpenChangedEventArgs = {
       position: sender.props.position
@@ -579,95 +570,97 @@ class SidebarAccordion extends Component<Props> {
         return {};
     }
   }
-  //
-  // private correctMaxSizeSidebars() {
-  //   if (!this.rootRef) {
-  //     return;
-  //   }
-  //   const setSpaceSidebar = (
-  //     openedSidebars: HTMLDivElement[],
-  //     outOfScreenSize: number
-  //   ) => {
-  //     openedSidebars.forEach(s => {
-  //       let spaceSidebar = +getComputedStyle(root)
-  //         .getPropertyValue(
-  //           `--ng-sidebar-accordion-space__sidebar-content-${s.position}`
-  //         )
-  //         .replace('px', '');
-  //
-  //       if (spaceSidebar < 0) {
-  //         spaceSidebar *= -1;
-  //       }
-  //
-  //       let spaceValue = spaceSidebar - outOfScreenSize;
-  //
-  //       if (spaceValue < 0) {
-  //         spaceValue = 0;
-  //       }
-  //
-  //       root.style.setProperty(
-  //         `--ng-sidebar-accordion-space__sidebar-content-${s.position}`,
-  //         spaceValue + 'px'
-  //       );
-  //     });
-  //   };
-  //
-  //   const getSidebarsOver = (
-  //     position: Position,
-  //     pane?: HTMLDivElement
-  //   ): HTMLDivElement[] => {
-  //     const sidebars: HTMLDivElement[] = [];
-  //     if (!pane) {
-  //       return sidebars;
-  //     }
-  //     for (let i = 0; i < pane.children.length; i++) {
-  //       const sidebar = pane.children[i] as HTMLDivElement;
-  //       if (
-  //         sidebar.getAttribute('open') &&
-  //         sidebar.className.includes(`sidebar-accordion__${position}-pane_over`)
-  //       ) {
-  //         sidebars.push(sidebar);
-  //       }
-  //     }
-  //     return sidebars;
-  //   };
-  //
-  //   const root = document.documentElement;
-  //
-  //   const spaceSidebarHeaderBorder = +getComputedStyle(root)
-  //     .getPropertyValue(`--sidebar-accordion-space__sidebar-header-border`)
-  //     .replace('px', '');
-  //
-  //   const outOfScreenWidth =
-  //     this.rootRef.scrollWidth -
-  //     (this.rootRef.clientWidth + spaceSidebarHeaderBorder);
-  //   const outOfScreenHeight =
-  //     this.rootRef.scrollHeight -
-  //     (this.rootRef.clientHeight + spaceSidebarHeaderBorder);
-  //
-  //   if (outOfScreenWidth > 0) {
-  //     const openedSidebarsW: HTMLDivElement[] = [
-  //       ...getSidebarsOver('left', this.panesRefs.left),
-  //       ...getSidebarsOver('right', this.panesRefs.right)
-  //     ];
-  //     setSpaceSidebar(openedSidebarsW, outOfScreenWidth);
-  //   }
-  //   if (outOfScreenHeight > 0) {
-  //     const openedSidebarsH: HTMLDivElement[] = [
-  //       ...getSidebarsOver('top', this.panesRefs.top),
-  //       ...getSidebarsOver('bottom', this.panesRefs.bottom)
-  //     ];
-  //     setSpaceSidebar(openedSidebarsH, outOfScreenHeight);
-  //   }
-  // }
+
+  /**
+   * Осуществляет корректировку максимального размера боковых панелей
+   * @return void
+   */
+  private correctMaxSizeSidebars() {
+    if (!this.rootRef) {
+      return;
+    }
+    const setSpaceSidebar = (
+      openedSidebarsPosition: Position[],
+      outOfScreenSize: number
+    ) => {
+      openedSidebarsPosition.forEach(s => {
+        let spaceSidebar = +getComputedStyle(root)
+          .getPropertyValue(`--sidebar-accordion-space__sidebar-content-${s}`)
+          .replace('px', '');
+
+        if (spaceSidebar < 0) {
+          spaceSidebar *= -1;
+        }
+
+        let spaceValue = spaceSidebar - outOfScreenSize;
+
+        if (spaceValue < 0) {
+          spaceValue = 0;
+        }
+
+        root.style.setProperty(
+          `--sidebar-accordion-space__sidebar-content-${s}`,
+          spaceValue + 'px'
+        );
+      });
+    };
+
+    const getSidebarsOver = (
+      position: Position,
+      pane?: HTMLDivElement
+    ): Position[] => {
+      const sidebarsPosition: Position[] = [];
+      if (!pane) {
+        return sidebarsPosition;
+      }
+      for (let i = 0; i < pane.children.length; i++) {
+        const sidebar = pane.children[i] as HTMLDivElement;
+        if (
+          sidebar.getAttribute('open') &&
+          sidebar.className.includes(`sidebar-accordion__${position}-pane_over`)
+        ) {
+          sidebarsPosition.push(position);
+        }
+      }
+      return sidebarsPosition;
+    };
+
+    const root = document.documentElement;
+
+    const spaceSidebarHeaderBorder = +getComputedStyle(root)
+      .getPropertyValue(`--sidebar-accordion-space__sidebar-header-border`)
+      .replace('px', '');
+
+    const outOfScreenWidth =
+      this.rootRef.scrollWidth -
+      (this.rootRef.clientWidth + spaceSidebarHeaderBorder);
+    const outOfScreenHeight =
+      this.rootRef.scrollHeight -
+      (this.rootRef.clientHeight + spaceSidebarHeaderBorder);
+
+    if (outOfScreenWidth > 0) {
+      const openedSidebarsW: Position[] = [
+        ...getSidebarsOver('left', this.panesRefs.left),
+        ...getSidebarsOver('right', this.panesRefs.right)
+      ];
+      setSpaceSidebar(openedSidebarsW, outOfScreenWidth);
+    }
+    if (outOfScreenHeight > 0) {
+      const openedSidebarsH: Position[] = [
+        ...getSidebarsOver('top', this.panesRefs.top),
+        ...getSidebarsOver('bottom', this.panesRefs.bottom)
+      ];
+      setSpaceSidebar(openedSidebarsH, outOfScreenHeight);
+    }
+  }
 }
 
 export type RenderModeType = 'push' | 'over';
 
-export type Position = 'left' | 'top' | 'right' | 'bottom' | 'all';
+export type Position = 'left' | 'top' | 'right' | 'bottom';
 
 export interface SidebarOpenChangedEventArgs {
-  position: 'left' | 'top' | 'right' | 'bottom';
+  position: Position;
   open?: number;
   close?: number;
 }
