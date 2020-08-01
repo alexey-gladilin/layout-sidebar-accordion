@@ -4,6 +4,21 @@ import { SidebarAccordionContent } from './sidebar-accordion-content';
 import { Sidebar } from './sidebar';
 import './sidebar-accordion.scss';
 
+export type RenderModeType = 'push' | 'over';
+
+export enum Position {
+  Left = 'left',
+  Top = 'top',
+  Right = 'right',
+  Bottom = 'bottom'
+}
+
+export interface SidebarOpenChangedEventArgs {
+  position: Position;
+  open?: number;
+  close?: number;
+}
+
 type ReactChildExt = ReactChild & {
   props?: any;
   type?: any;
@@ -54,14 +69,6 @@ class SidebarAccordion extends Component<Props> {
   } = {};
 
   private rootRef: HTMLDivElement | null = null;
-
-  /**
-   * Контейнер для размещения контента и боковых панелей
-   * @param props Параметры
-   */
-  constructor(props: Props) {
-    super(props);
-  }
 
   /**
    * Функция отрисовки компонента
@@ -172,7 +179,7 @@ class SidebarAccordion extends Component<Props> {
       const arr: Element[] = [];
       const paneRef = this.panesRefs[position as Position];
       if (paneRef) {
-        if (position === 'left' || position === 'top') {
+        if (position === Position.Left || position === Position.Top) {
           for (let i = paneRef.children.length - 1; i >= 0; i--) {
             arr.push(paneRef.children[i]);
           }
@@ -195,26 +202,34 @@ class SidebarAccordion extends Component<Props> {
           if (opened) {
             sidebars.forEach((sidebar, i) => {
               if (i > 0) {
-                SidebarAccordion.removeAttrOpen(sidebar);
+                this.removeAttrOpen(sidebar, key as Position, i);
               } else if (i === 0) {
-                SidebarAccordion.addAttrOpen(sidebar);
+                this.addAttrOpen(sidebar, key as Position, i);
               }
             });
           } else {
-            sidebars.forEach(sidebar =>
-              SidebarAccordion.removeAttrOpen(sidebar)
+            sidebars.forEach((sidebar, i) =>
+              this.removeAttrOpen(sidebar, key as Position, i)
             );
           }
         });
         break;
       default:
-        sidebars.forEach(s => SidebarAccordion.removeAttrOpen(s));
+        sidebars.forEach((s, i) =>
+          this.removeAttrOpen(s, position as Position, i)
+        );
 
         opened
-          ? SidebarAccordion.addAttrOpen(sidebars[index ? index : 0])
+          ? this.addAttrOpen(
+              sidebars[index ? index : 0],
+              position as Position,
+              index ? index : 0
+            )
           : index
-          ? SidebarAccordion.removeAttrOpen(sidebars[index])
-          : sidebars.forEach(s => SidebarAccordion.removeAttrOpen(s));
+          ? this.removeAttrOpen(sidebars[index], position as Position, index)
+          : sidebars.forEach((s, i) =>
+              this.removeAttrOpen(s, position as Position, i)
+            );
         break;
     }
   }
@@ -275,33 +290,70 @@ class SidebarAccordion extends Component<Props> {
       }
     }
 
+    this.onOpenChanged(eventArgs);
+  }
+
+  /**
+   * Обработчик события изменения статус открыта/закрыта боковая панель
+   * @param e Параметры события
+   * @return void
+   */
+  private onOpenChanged(e: SidebarOpenChangedEventArgs): void {
     const { sidebarOpenChanged } = this.props as Props;
 
+    const root = document.documentElement;
+    const animationDuration = +getComputedStyle(root)
+      .getPropertyValue(`--ng-sidebar-accordion-animation-duration`)
+      .replace('s', '');
+
+    setTimeout(() => this.correctMaxSizeSidebars(), 1000 * animationDuration);
+
     if (sidebarOpenChanged) {
-      sidebarOpenChanged(eventArgs);
+      sidebarOpenChanged(e);
     }
-    // console.log('sidebar onHeaderClicked event');
   }
 
   /**
    * Устанавливает атрибут открытия панели
    * @param sidebar Ссылка на DOM элемент боковой панели
+   * @param position Позиция боковой панели
+   * @param index Порядковый номер
    * @return void
    */
-  private static addAttrOpen(sidebar: Element): void {
-    if (sidebar) {
+  private addAttrOpen(
+    sidebar: Element,
+    position: Position,
+    index: number
+  ): void {
+    if (sidebar && sidebar.getAttribute('open') !== '') {
       sidebar.setAttribute('open', '');
+
+      this.onOpenChanged({
+        position,
+        open: index
+      });
     }
   }
 
   /**
    * Удаляет атрибут открытия панели
    * @param sidebar Ссылка на DOM элемент боковой панели
+   * @param position Позиция боковой панели
+   * @param index Порядковый номер
    * @return void
    */
-  private static removeAttrOpen(sidebar: Element): void {
-    if (sidebar) {
+  private removeAttrOpen(
+    sidebar: Element,
+    position: Position,
+    index: number
+  ): void {
+    if (sidebar && sidebar.getAttribute('open') === '') {
       sidebar.removeAttribute('open');
+
+      this.onOpenChanged({
+        position,
+        close: index
+      });
     }
   }
 
@@ -372,16 +424,16 @@ class SidebarAccordion extends Component<Props> {
         });
 
         switch (sidebar.props.position) {
-          case 'left':
+          case Position.Left:
             leftPane.push(sidebar);
             break;
-          case 'top':
+          case Position.Top:
             topPane.push(sidebar);
             break;
-          case 'right':
+          case Position.Right:
             rightPane.push(sidebar);
             break;
-          case 'bottom':
+          case Position.Bottom:
             bottomPane.push(sidebar);
             break;
         }
@@ -412,8 +464,8 @@ class SidebarAccordion extends Component<Props> {
         className={'sidebar-accordion' + (className ? ` ${className}` : '')}
       >
         <div
-          ref={elm => (this.panesRefs['left'] = elm as HTMLDivElement)}
-          className={getPaneClassName('left', mode?.left)}
+          ref={elm => (this.panesRefs[Position.Left] = elm as HTMLDivElement)}
+          className={getPaneClassName(Position.Left, mode?.left)}
         >
           {leftPane.reverse().map((item, index) => {
             return (
@@ -422,8 +474,8 @@ class SidebarAccordion extends Component<Props> {
           })}
         </div>
         <div
-          ref={elm => (this.panesRefs['top'] = elm as HTMLDivElement)}
-          className={getPaneClassName('top', mode?.top)}
+          ref={elm => (this.panesRefs[Position.Top] = elm as HTMLDivElement)}
+          className={getPaneClassName(Position.Top, mode?.top)}
         >
           {topPane.reverse().map((item, index) => {
             return (
@@ -432,8 +484,8 @@ class SidebarAccordion extends Component<Props> {
           })}
         </div>
         <div
-          ref={elm => (this.panesRefs['right'] = elm as HTMLDivElement)}
-          className={getPaneClassName('right', mode?.right)}
+          ref={elm => (this.panesRefs[Position.Right] = elm as HTMLDivElement)}
+          className={getPaneClassName(Position.Right, mode?.right)}
         >
           {rightPane.map((item, index) => {
             return (
@@ -442,8 +494,8 @@ class SidebarAccordion extends Component<Props> {
           })}
         </div>
         <div
-          ref={elm => (this.panesRefs['bottom'] = elm as HTMLDivElement)}
-          className={getPaneClassName('bottom', mode?.bottom)}
+          ref={elm => (this.panesRefs[Position.Bottom] = elm as HTMLDivElement)}
+          className={getPaneClassName(Position.Bottom, mode?.bottom)}
         >
           {bottomPane.map((item, index) => {
             return (
@@ -473,33 +525,37 @@ class SidebarAccordion extends Component<Props> {
       .getPropertyValue(`--sidebar-accordion-space__sidebar-header-border`)
       .replace('px', '');
 
-    const leftPaneIsOver = this.panesRefs['left']?.classList.contains(
+    const leftPaneIsOver = this.panesRefs[Position.Left]?.classList.contains(
       `sidebar-accordion__left-pane_over`
     );
-    const topPaneIsOver = this.panesRefs['top']?.classList.contains(
+    const topPaneIsOver = this.panesRefs[Position.Top]?.classList.contains(
       `sidebar-accordion__top-pane_over`
     );
-    const rightPaneIsOver = this.panesRefs['right']?.classList.contains(
+    const rightPaneIsOver = this.panesRefs[Position.Right]?.classList.contains(
       `sidebar-accordion__right-pane_over`
     );
-    const bottomPaneIsOver = this.panesRefs['bottom']?.classList.contains(
-      `sidebar-accordion__bottom-pane_over`
-    );
+    const bottomPaneIsOver = this.panesRefs[
+      Position.Bottom
+    ]?.classList.contains(`sidebar-accordion__bottom-pane_over`);
 
     const leftSidebarCount =
-      this.panesRefs['left']?.querySelectorAll('.sidebar-header').length || 0;
+      this.panesRefs[Position.Left]?.querySelectorAll('.sidebar-header')
+        .length || 0;
     const topSidebarCount =
-      this.panesRefs['top']?.querySelectorAll('.sidebar-header').length || 0;
+      this.panesRefs[Position.Top]?.querySelectorAll('.sidebar-header')
+        .length || 0;
     const rightSidebarCount =
-      this.panesRefs['right']?.querySelectorAll('.sidebar-header').length || 0;
+      this.panesRefs[Position.Right]?.querySelectorAll('.sidebar-header')
+        .length || 0;
     const bottomSidebarCount =
-      this.panesRefs['bottom']?.querySelectorAll('.sidebar-header').length || 0;
+      this.panesRefs[Position.Bottom]?.querySelectorAll('.sidebar-header')
+        .length || 0;
 
     const style: HTMLStyle = {};
 
     switch (position) {
-      case 'top':
-      case 'bottom':
+      case Position.Top:
+      case Position.Bottom:
         const currentPaneIsOver = this.panesRefs[position]?.classList.contains(
           `sidebar-accordion__${position}-pane_over`
         );
@@ -579,6 +635,7 @@ class SidebarAccordion extends Component<Props> {
     if (!this.rootRef) {
       return;
     }
+    console.log('correctSizeSidebars');
     const setSpaceSidebar = (
       openedSidebarsPosition: Position[],
       outOfScreenSize: number
@@ -640,29 +697,19 @@ class SidebarAccordion extends Component<Props> {
 
     if (outOfScreenWidth > 0) {
       const openedSidebarsW: Position[] = [
-        ...getSidebarsOver('left', this.panesRefs.left),
-        ...getSidebarsOver('right', this.panesRefs.right)
+        ...getSidebarsOver(Position.Left, this.panesRefs.left),
+        ...getSidebarsOver(Position.Right, this.panesRefs.right)
       ];
       setSpaceSidebar(openedSidebarsW, outOfScreenWidth);
     }
     if (outOfScreenHeight > 0) {
       const openedSidebarsH: Position[] = [
-        ...getSidebarsOver('top', this.panesRefs.top),
-        ...getSidebarsOver('bottom', this.panesRefs.bottom)
+        ...getSidebarsOver(Position.Top, this.panesRefs.top),
+        ...getSidebarsOver(Position.Bottom, this.panesRefs.bottom)
       ];
       setSpaceSidebar(openedSidebarsH, outOfScreenHeight);
     }
   }
-}
-
-export type RenderModeType = 'push' | 'over';
-
-export type Position = 'left' | 'top' | 'right' | 'bottom';
-
-export interface SidebarOpenChangedEventArgs {
-  position: Position;
-  open?: number;
-  close?: number;
 }
 
 export { SidebarAccordion };
