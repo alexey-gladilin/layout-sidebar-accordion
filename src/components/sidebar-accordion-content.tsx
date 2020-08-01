@@ -2,7 +2,7 @@ import React, { FunctionComponent, ReactChild } from 'react';
 
 interface SidebarAccordionContentProps {
   className?: string;
-  children?: ReactChild;
+  children?: ReactChild | ReactChild[];
 }
 
 type Props = Readonly<SidebarAccordionContentProps>;

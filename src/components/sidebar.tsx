@@ -95,7 +95,7 @@ const Sidebar: FunctionComponent<Props> = ({
     }
     if (header && header?.type !== SidebarHeader) {
       throw new Error('children header is not SidebarHeader');
-    } else {
+    } else if (header) {
       header = React.cloneElement(header as any, {
         ...header?.props,
         ...{

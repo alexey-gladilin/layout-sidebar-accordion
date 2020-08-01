@@ -8,7 +8,7 @@ interface SidebarHeaderProps {
   clicked?: (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => void;
   touchMoved?: (e: React.TouchEvent<HTMLDivElement>) => void;
   touchEnded?: (e: React.TouchEvent<HTMLDivElement>) => void;
-  children?: ReactChild;
+  children?: ReactChild | ReactChild[];
 }
 
 type Props = Readonly<SidebarHeaderProps>;
@@ -73,7 +73,9 @@ const SidebarHeader: FunctionComponent<Props> = ({
       onTouchMove={e => onTouchMove(e)}
       onTouchEnd={e => onTouchEnd(e)}
     >
-      <div className="sidebar-header__content">{children}</div>
+      <div className="sidebar-header__content">
+        <div className="sidebar-header__wrapper">{children}</div>
+      </div>
     </div>
   );
 };
